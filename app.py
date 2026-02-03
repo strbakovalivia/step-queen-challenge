@@ -49,28 +49,34 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
     with st.form("add_steps"):
         col1, col2 = st.columns(2)
         with col1:
-            jmeno = st.selectbox("Kdo jsi?", ["Lili", "Lenka", "Monka"])
+            jmeno_volba = st.selectbox("Kdo jsi?", ["Lili", "Lenka", "Monka"])
         with col2:
-            datum = st.date_input("Den", datetime.now())
+            datum_volba = st.date_input("Den", datetime.now())
         
-        kroky = st.number_input("Počet kroků", min_value=0, step=1000, value=10000)
-        
-        submitted = st.form_submit_button("Uložit do deníčku ✨")
+        kroky_cislo = st.number_input("Počet kroků", min_value=0, step=100, value=10000)
+        submitted = st.form_submit_button("Uložit do Google Tabulky ✨")
         
         if submitted:
-            new_row = pd.DataFrame({
-                "datum": [datum.strftime("%Y-%m-%d")],
-                "jmeno": [jmeno],
-                "kroky": [kroky]
+            # 1. Vytvoření nového řádku
+            new_entry = pd.DataFrame({
+                "datum": [datum_volba.strftime("%Y-%m-%d")],
+                "jmeno": [jmeno_volba],
+                "kroky": [kroky_cislo]
             })
             
-            # Tady se děje ta magie zápisu
-            updated_df = pd.concat([df, new_row], ignore_index=True)
-            conn.update(data=updated_df)
+            # 2. Načtení aktuálních dat, aby se nepřemazala
+            current_df = conn.read(ttl="0s")
             
-            # DŮLEŽITÉ: Tohle vynutí, aby si aplikace sáhla do tabulky znovu
-            st.cache_data.clear() 
+            # 3. Spojení starých dat s novým záznamem
+            final_df = pd.concat([current_df, new_entry], ignore_index=True)
+            
+            # 4. Odeslání do Google Sheets
+            conn.update(data=final_df)
+            
+            # 5. Úklid a radost
+            st.cache_data.clear()
             st.balloons()
+            st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
 # --- HISTORIE ---
