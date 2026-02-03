@@ -58,23 +58,19 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
         submitted = st.form_submit_button("Uložit do deníčku ✨")
         
         if submitted:
-            # Vytvoření nového řádku
             new_row = pd.DataFrame({
                 "datum": [datum.strftime("%Y-%m-%d")],
                 "jmeno": [jmeno],
                 "kroky": [kroky]
             })
             
-            # Spojení starých dat s novými
+            # Tady se děje ta magie zápisu
             updated_df = pd.concat([df, new_row], ignore_index=True)
-            
-            # Zápis do Google Sheets
             conn.update(data=updated_df)
             
-            st.balloons()
-            st.success("Kroky odeslány do Google Tabulky! ✨")
-            # Vyčištění cache, aby se data hned znovu načetla
+            # DŮLEŽITÉ: Tohle vynutí, aby si aplikace sáhla do tabulky znovu
             st.cache_data.clear() 
+            st.balloons()
             st.rerun()
 
 # --- HISTORIE ---
