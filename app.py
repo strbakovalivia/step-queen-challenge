@@ -69,8 +69,8 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             # 3. Spojení starých dat s novými
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
             
-            # 4. Odeslání do Google Sheets
-            conn.create(data=final_df)
+            # 4. Odeslání do Google Sheets (TADY MÁ BÝT UPDATE)
+            conn.update(data=final_df)
             
             # 5. Refresh
             st.cache_data.clear()
