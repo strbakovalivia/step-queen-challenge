@@ -70,7 +70,7 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
             
             # 4. Odeslání do Google Sheets
-            conn.update(data=final_df)
+            conn.create(data=final_df)
             
             # 5. Refresh
             st.cache_data.clear()
