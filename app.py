@@ -16,11 +16,10 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 def load_data():
     try:
         data = conn.read(ttl="0s")
-        # Pokud je tabulka úplně prázdná, vytvoříme základní strukturu
         if data is None or data.empty:
             return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
         return data
-    except:
+    except Exception:
         return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
 
 df = load_data()
@@ -29,19 +28,19 @@ df = load_data()
 current_month = datetime.now().strftime("%m/%Y")
 
 if not df.empty:
-    # Převod na datetime pro jistotu
+    # Převod na datetime, aby fungovaly filtry
     df['datum'] = pd.to_datetime(df['datum'])
     df_current = df[df['datum'].dt.strftime("%m/%Y") == current_month]
     
     if not df_current.empty:
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
-        winner = stats.loc[stats['kroky'].idxmax()]
-        st.success(f"🏆 Aktuální královna měsíce: **{winner['jmeno']}** ({int(winner['kroky']):,} kroků)")
+        winner_row = stats.loc[stats['kroky'].idxmax()]
+        st.success(f"🏆 Aktuální královna měsíce: **{winner_row['jmeno']}** ({int(winner_row['kroky']):,} kroků)")
         st.bar_chart(data=stats, x="jmeno", y="kroky")
     else:
         st.info("Tento měsíc zatím žádné kroky. Kdo začne?")
 else:
-    st.info("Zatím žádná data v Google Tabulce.")
+    st.info("Zatím žádná data. Šup ven na procházku!")
 
 # --- FORMULÁŘ PRO ZÁPIS ---
 st.divider()
@@ -64,17 +63,19 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
                 "kroky": [int(kroky_cislo)]
             })
             
-            # 2. Načtení čerstvých dat před zápisem
+            # 2. Načtení čerstvých dat
             fresh_df = load_data()
             
-            # 3. Spojení a odeslání
+            # 3. Spojení starých dat s novými
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
+            
+            # 4. Odeslání do Google Sheets
             conn.update(data=final_df)
             
-            # 4. Úklid
+            # 5. Refresh
             st.cache_data.clear()
             st.balloons()
-            st.success("Hotovo! Kroky jsou v tabulce. 🚀")
+            st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
 # --- HISTORIE ---
