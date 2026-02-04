@@ -15,7 +15,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # Funkce pro bezpečné načtení dat
 def load_data():
     try:
-        data = conn.read(worksheet="List1", ttl="0s") # Přepiš "List1" podle toho, jak se jmenuje tvůj list dole v tabulce
+        data = conn.read(worksheet="List1", ttl="0s")
         if data is None or data.empty:
             return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
         return data
@@ -70,7 +70,7 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
             
             # 4. Odeslání do Google Sheets (TADY MÁ BÝT UPDATE)
-            conn.update(worksheet="List1", data=final_df) # Zde také použij stejný název
+            conn.update(worksheet="List1", data=final_df)
             
             # 5. Refresh
             st.cache_data.clear()
