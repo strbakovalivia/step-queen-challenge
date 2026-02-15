@@ -95,11 +95,11 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
-# --- HEZČÍ SPRÁVA ZÁZNAMŮ ---
+--- HEZČÍ SPRÁVA ZÁZNAMŮ (OPRAVENÁ VERZE) ---
 st.divider()
 st.subheader("🗑️ Upravit nebo smazat záznamy")
 
-# Seřadíme data od nejnovějších
+# Vytvoříme kopii pro zobrazení, ale indexy zachováme původní
 df_display = df.copy().sort_values(by="datum", ascending=False)
 
 for index, row in df_display.iterrows():
@@ -108,26 +108,27 @@ for index, row in df_display.iterrows():
     
     # Vytvoření "karty" pro každý záznam
     with st.container():
-        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+        # Upravil jsem poměry sloupců, aby se to na mobilu lépe skládalo
+        col1, col2, col3 = st.columns([3, 2, 1])
         
         with col1:
+            # Datum a jméno v jednom sloupci nad sebou pro úsporu místa
             st.markdown(f"**📅 {row['datum']}**")
-        with col2:
             st.markdown(f"<span style='color:{color}; font-weight:bold;'>👤 {row['jmeno']}</span>", unsafe_allow_html=True)
-        with col3:
+        
+        with col2:
             st.markdown(f"**👣 {int(row['kroky']):,}**")
-        with col4:
-            # Unikátní klíč pro každé tlačítko smazání
-            if st.button("Smazat", key=f"del_{index}"):
-                new_df = df.drop(index)
-                conn.update(worksheet="List1", data=new_df)
+        
+        with col3:
+            # Tlačítko smazat
+            if st.button("🗑️", key=f"del_{index}"):
+                # Smažeme řádek podle původního indexu
+                updated_df = df.drop(index)
+                conn.update(worksheet="List1", data=updated_df)
                 st.cache_data.clear()
-                st.success("Smazáno!")
                 st.rerun()
-        st.markdown("---") # Oddělovač mezi kartami
-    }
-)
-
+        
+        st.markdown("---")
 if st.button("💾 Uložit všechny změny do tabulky"):
     try:
         # Převod datumu zpět na řetězec, aby se v Google Sheets správně zobrazoval
