@@ -89,12 +89,6 @@ if not df.empty:
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.markdown(f"<br><center>👑 Aktuální StepQueen je <b>{winner_row['jmeno']}</b></center>", unsafe_allow_html=True)
         
-        # --- GRAF (ÚPLNĚ MINIMALISTICKÝ NEBO HO MŮŽEŠ SMAZAT) ---
-        # Pokud ho tam chceš nechat, tak tohle ho vyčistí od všech popisků:
-        fig = px.bar(stats, x="jmeno", y="kroky", color="jmeno", color_discrete_map={"Lili": "#FF4B4B", "Lenka": "#4B8BFF", "Monka": "#FFD700"})
-        fig.update_layout(showlegend=False, xaxis_visible=False, yaxis_visible=False, margin=dict(t=10, l=10, r=10, b=10), height=100, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
         # 3. Určení vítězky a barevný graf
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.markdown(f"<br>👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!", unsafe_allow_html=True)
