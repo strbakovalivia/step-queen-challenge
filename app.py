@@ -79,11 +79,28 @@ if not df.empty:
         st.markdown(f"<br>👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!", unsafe_allow_html=True)
         
         color_map = {"Lili": "#FF4B4B", "Lenka": "#4B8BFF", "Monka": "#FFD700"}
-        fig = px.bar(stats, x="jmeno", y="kroky", color="jmeno", color_discrete_map=color_map, text_auto=',.0f')
-        fig.update_traces(textposition='outside')
-        fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', 
-                          xaxis={'categoryorder':'total descending'}, yaxis_visible=False, height=300)
+        fig = px.bar(
+            stats, 
+            x="jmeno", 
+            y="kroky", 
+            color="jmeno",
+            color_discrete_map=color_map,
+            text_auto=',.0f'
+        )
         
+        fig.update_traces(textposition='outside', cliponaxis=False)
+        
+        fig.update_layout(
+            showlegend=False,             # Tímto zmizí ten červený/barevný sloupec vpravo (legenda)
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=30, l=0, r=0, b=0), # Vyladění okrajů
+            xaxis_title="",               # Odstraní nápis "jmeno" pod grafem
+            yaxis_visible=False,          # Skryje celou levou osu
+            xaxis_visible=True            # Nechá jen jména pod sloupci
+        )
+        
+        # config={'displayModeBar': False} zajistí, že neuvidíš tu lištu s foťákem a lupou
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     else:
         st.info("Tento měsíc zatím žádné kroky.")
