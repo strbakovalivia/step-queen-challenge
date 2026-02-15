@@ -6,7 +6,7 @@ import plotly.express as px
 
 # --- NASTAVENÍ STRÁNKY ---
 st.set_page_config(
-    page_title="StepQueen Challenge",  # Změněno z "StepQueen 🏃‍♀️" na čistý text
+    page_title="StepQueen Challenge", 
     page_icon="👑",
     layout="centered",
     initial_sidebar_state="collapsed"
