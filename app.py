@@ -6,10 +6,9 @@ import plotly.express as px
 
 # --- NASTAVENÍ STRÁNKY ---
 st.set_page_config(
-    page_title="StepQueen Challenge", 
-    page_icon="👑",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    page_title="StepQueen Challenge",
+    page_icon="https://cdn-icons-png.flaticon.com/512/182/182335.png", # Ikona zlaté koruny
+    layout="centered"
 )
 
 st.title("🏃‍♀️ StepQueen Challenge")
