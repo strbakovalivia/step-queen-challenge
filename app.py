@@ -33,16 +33,18 @@ df = load_data()
 
 # --- VÝPOČET KRÁLOVNY A DASHBOARD ---
 current_month_str = datetime.now().strftime("%m/%Y")
+today_date = datetime.now().date()
+
 st.subheader(f"📊 Přehled za {current_month_str}")
 
 if not df.empty:
-    # 1. Musíme vytvořit pomocný sloupec pro filtraci měsíce
+    # Pomocné výpočty
     df_temp = df.copy()
     df_temp['month_year'] = pd.to_datetime(df_temp['datum']).dt.strftime("%m/%Y")
     df_current = df_temp[df_temp['month_year'] == current_month_str]
     
     if not df_current.empty:
-        # 2. Seskupení dat pro dashboard
+        # Celkové statistiky pro graf/výpočty
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
         den_v_mesici = datetime.now().day
         
@@ -54,25 +56,44 @@ if not df.empty:
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
-            osoba_data = stats[stats['jmeno'] == jmeno]
-            pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
-            prumer_den = int(pocet_kroku / den_v_mesici)
+            # 1. Kroky celkem
+            osoba_celkem = stats[stats['jmeno'] == jmeno]
+            pocet_celkem = int(osoba_celkem['kroky'].iloc[0]) if not osoba_celkem.empty else 0
+            
+            # 2. Kroky dnes (filtrujeme jen dnešní datum)
+            dnes_data = df[df['datum'] == today_date]
+            osoba_dnes = dnes_data[dnes_data['jmeno'] == jmeno]
+            pocet_dnes = int(osoba_dnes['kroky'].iloc[0]) if not osoba_dnes.empty else 0
+            
+            # 3. Průměr
+            prumer_den = int(pocet_celkem / den_v_mesici)
             
             with cols[i]:
                 st.markdown(
                     f"""
-                    <div style="background-color: {info['color']}22; padding: 15px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center; min-height: 180px;">
-                        <h1 style="margin:0;">{info['icon']}</h1>
-                        <p style="margin:0; font-weight: bold; color: {info['color']};">{jmeno}</p>
-                        <h2 style="margin:0;">{pocet_kroku:,}</h2>
-                        <p style="margin:0; font-size: 12px;">celkem</p>
-                        <hr style="border: 0.5px solid {info['color']}55; margin: 10px 0;">
-                        <p style="margin:0; font-size: 14px; font-weight: bold;">{prumer_den:,}</p>
-                        <p style="margin:0; font-size: 10px; opacity: 0.8;">denní průměr</p>
+                    <div style="background-color: {info['color']}22; padding: 12px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center; min-height: 220px;">
+                        <h1 style="margin:0; font-size: 30px;">{info['icon']}</h1>
+                        <p style="margin:0; font-weight: bold; color: {info['color']}; font-size: 18px;">{jmeno}</p>
+                        <hr style="border: 0.5px solid {info['color']}55; margin: 8px 0;">
+                        <p style="margin:0; font-size: 10px; text-transform: uppercase;">Dnes</p>
+                        <h3 style="margin:0; font-size: 22px;">{pocet_dnes:,}</h3>
+                        <hr style="border: 0.5px solid {info['color']}55; margin: 8px 0;">
+                        <p style="margin:0; font-size: 10px; text-transform: uppercase;">Průměr: <b>{prumer_den:,}</b></p>
+                        <p style="margin:0; font-size: 10px; text-transform: uppercase;">Celkem: <b>{pocet_celkem:,}</b></p>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
+
+        # Motivační hláška (kdo vede)
+        winner_row = stats.loc[stats['kroky'].idxmax()]
+        st.markdown(f"<br><center>👑 Aktuální StepQueen je <b>{winner_row['jmeno']}</b></center>", unsafe_allow_html=True)
+        
+        # --- GRAF (ÚPLNĚ MINIMALISTICKÝ NEBO HO MŮŽEŠ SMAZAT) ---
+        # Pokud ho tam chceš nechat, tak tohle ho vyčistí od všech popisků:
+        fig = px.bar(stats, x="jmeno", y="kroky", color="jmeno", color_discrete_map={"Lili": "#FF4B4B", "Lenka": "#4B8BFF", "Monka": "#FFD700"})
+        fig.update_layout(showlegend=False, xaxis_visible=False, yaxis_visible=False, margin=dict(t=10, l=10, r=10, b=10), height=100, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
         # 3. Určení vítězky a barevný graf
         winner_row = stats.loc[stats['kroky'].idxmax()]
