@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
 
 # --- NASTAVENÍ STRÁNKY ---
 st.set_page_config(
@@ -74,7 +75,38 @@ if not df.empty:
 
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.markdown(f"<br>👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!", unsafe_allow_html=True)
-        st.bar_chart(data=stats, x="jmeno", y="kroky", color="#FF4B4B")
+        st.write("") # Trocha místa
+        
+        # Definice barev pro graf přesně podle vás
+        color_map = {
+            "Lili": "#FF4B4B",
+            "Lenka": "#4B8BFF",
+            "Monka": "#FFD700"
+        }
+        
+        fig = px.bar(
+            stats, 
+            x="jmeno", 
+            y="kroky", 
+            color="jmeno",
+            color_discrete_map=color_map,
+            text_auto=',.0f', # Zobrazí číslo nad sloupcem s oddělovačem tisíců
+            labels={"kroky": "Celkem kroků", "jmeno": "Královna"}
+        )
+        
+        # Vylepšení vzhledu grafu (odstranění zbytečných čar, pozadí atd.)
+        fig.update_traces(textposition='outside', cliponaxis=False)
+        fig.update_layout(
+            showlegend=False,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=20, l=0, r=0, b=0),
+            xaxis={'categoryorder':'total descending'}, # Seřadí sloupce od nejlepšího
+            yaxis_showticklabels=False, # Schováme levou osu, čísla jsou nad sloupci
+            yaxis_visible=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     else:
         st.info("Tento měsíc zatím žádné kroky.")
 else:
