@@ -6,7 +6,7 @@ import plotly.express as px
 
 # --- NASTAVENÍ STRÁNKY ---
 st.set_page_config(
-    page_title="StepQueen 🏃‍♀️", 
+    page_title="StepQueen Challenge", # Tohle pomůže vyhledávačům a systému
     page_icon="👑",
     layout="centered",
     initial_sidebar_state="collapsed"
