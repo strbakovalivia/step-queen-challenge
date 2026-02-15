@@ -91,23 +91,22 @@ st.divider()
 st.subheader("🗑️ Historie a mazání")
 
 if not df.empty:
-    # Seřadíme od nejnovějších
     df_display = df.copy().sort_values(by="datum", ascending=False)
 
     for index, row in df_display.iterrows():
+        # Lili = Červená, Lenka = Modrá, Monka = Zlatá
         color = "#FF4B4B" if row['jmeno'] == "Lili" else "#4B8BFF" if row['jmeno'] == "Lenka" else "#FFD700"
         
         with st.container():
             c1, c2, c3 = st.columns([3, 2, 1])
             with c1:
                 st.markdown(f"**📅 {row['datum']}**")
-                st.markdown(f"<span style='color:{color}; font-weight:bold;'>👤 {row['jmeno']}</span>", unsafe_allow_html=True)
+                # TADY JE TA ZMĚNA: Použita ikona běžkyně 🏃‍♀️
+                st.markdown(f"<span style='color:{color}; font-weight:bold;'>🏃‍♀️ {row['jmeno']}</span>", unsafe_allow_html=True)
             with c2:
                 st.markdown(f"**👣 {int(row['kroky']):,}**")
             with c3:
-                # Smažeme přímo pomocí tlačítka u řádku
                 if st.button("🗑️", key=f"del_{index}"):
-                    # Musíme smazat z původního df (pomocí indexu)
                     df_to_save = df.drop(index)
                     conn.update(worksheet="List1", data=df_to_save)
                     st.cache_data.clear()
