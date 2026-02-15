@@ -31,49 +31,39 @@ df = load_data()
 
 # --- VÝPOČET KRÁLOVNY ---
 # --- VÝPOČET KRÁLOVNY A DASHBOARD ---
-current_month = datetime.now().strftime("%m/%Y")
-st.subheader(f"📊 Přehled za {current_month}")
-
-if not df.empty:
-    # Převod na datetime pro filtraci
-    df['datum_dt'] = pd.to_datetime(df['datum'])
-    df_current = df[df['datum_dt'].dt.strftime("%m/%Y") == current_month]
+if not df_current.empty:
+    stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
     
-    if not df_current.empty:
-        # Součet kroků pro každou královnu
-        stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
-        
-        # Příprava metrik v pěkných sloupcích
-        cols = st.columns(3)
-        holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#FF4B4B"},
-            "Lenka": {"icon": "👩🏻", "color": "#4B8BFF"},
-            "Monka": {"icon": "👱‍♀️", "color": "#FFD700"}
-        }
+    # Výpočet průměru (počet dní v měsíci do dneška)
+    den_v_mesici = datetime.now().day
+    
+    cols = st.columns(3)
+    holky_nastaveni = {
+        "Lili": {"icon": "👱‍♀️✨", "color": "#FF4B4B"},
+        "Lenka": {"icon": "👩🏻", "color": "#4B8BFF"},
+        "Monka": {"icon": "👱‍♀️", "color": "#FFD700"}
+    }
 
-        for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
-            # Najdeme kroky pro konkrétní osobu, pokud nemá nic, tak 0
-            osoba_data = stats[stats['jmeno'] == jmeno]
-            pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
-            
-            with cols[i]:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background-color: {info['color']}22; 
-                        padding: 15px; 
-                        border-radius: 15px; 
-                        border: 2px solid {info['color']};
-                        text-align: center;
-                        margin-bottom: 10px;">
-                        <h1 style="margin:0; font-size: 40px;">{info['icon']}</h1>
-                        <p style="margin:0; font-weight: bold; color: {info['color']};">{jmeno}</p>
-                        <h2 style="margin:0; font-size: 24px;">{pocet_kroku:,}</h2>
-                        <p style="margin:0; font-size: 12px; opacity: 0.8;">kroků</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+    for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
+        osoba_data = stats[stats['jmeno'] == jmeno]
+        pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
+        prumer_den = int(pocet_kroku / den_v_mesici) # Denní průměr v měsíci
+        
+        with cols[i]:
+            st.markdown(
+                f"""
+                <div style="background-color: {info['color']}22; padding: 15px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center;">
+                    <h1 style="margin:0;">{info['icon']}</h1>
+                    <p style="margin:0; font-weight: bold; color: {info['color']};">{jmeno}</p>
+                    <h2 style="margin:0;">{pocet_kroku:,}</h2>
+                    <p style="margin:0; font-size: 12px;">celkem</p>
+                    <hr style="border: 0.5px solid {info['color']}55;">
+                    <p style="margin:0; font-size: 14px; font-weight: bold;">{prumer_den:,}</p>
+                    <p style="margin:0; font-size: 10px; opacity: 0.8;">denní průměr</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         # Určení celkové vítězky pro motivační zprávu
         winner_row = stats.loc[stats['kroky'].idxmax()]
