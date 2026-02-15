@@ -46,6 +46,18 @@ if not df.empty:
         st.info("Tento měsíc zatím žádné kroky. Kdo začne?")
 else:
     st.info("Zatím žádná data. Šup ven na procházku!")
+    
+# --- VEČERNÍ PŘIPOMÍNAČ V APLIKACI ---
+now = datetime.now()
+if now.hour >= 21:
+    # Zkontrolujeme, kdo dnes ještě nezapsal
+    today_str = now.strftime("%Y-%m-%d")
+    zapsali_dnes = df[df['datum'].astype(str) == today_str]['jmeno'].unique()
+    
+    chybejici = [j for j in ["Lili", "Lenka", "Monka"] if j not in zapsali_dnes]
+    
+    if chybejici:
+        st.warning(f"⚠️ Je po deváté večer a tyto královny ještě nezapsaly kroky: {', '.join(chybejici)}!")
 
 # --- FORMULÁŘ PRO ZÁPIS ---
 st.divider()
