@@ -78,6 +78,39 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
-# --- HISTORIE ---
-if st.checkbox("Zobrazit historii"):
-    st.dataframe(df.sort_values(by="datum", ascending=False), use_container_width=True)
+# --- POKROČILÁ SPRÁVA DAT (Editace a Mazání) ---
+st.divider()
+st.subheader("🛠️ Správa záznamů")
+st.info("Zde můžeš měnit hodnoty přímo v tabulce nebo vybrat řádek a stisknout klávesu Delete. Po úpravách nezapomeň kliknout na tlačítko uložit.")
+
+# Vytvoření editoru dat
+# sloupce 'datum' a 'jmeno' necháme upravitelné, 'kroky' také
+edited_df = st.data_editor(
+    df, 
+    num_rows="dynamic", # Umožňuje mazat řádky (ikonka koše nebo klávesa delete)
+    use_container_width=True,
+    column_config={
+        "datum": st.column_config.DateColumn("Datum"),
+        "jmeno": st.column_config.SelectboxColumn("Jméno", options=["Lili", "Lenka", "Monka"]),
+        "kroky": st.column_config.NumberColumn("Počet kroků", min_value=0)
+    }
+)
+
+if st.button("💾 Uložit všechny změny do tabulky"):
+    try:
+        # Převod datumu zpět na řetězec, aby se v Google Sheets správně zobrazoval
+        if "datum" in edited_df.columns:
+            edited_df["datum"] = edited_df["datum"].astype(str)
+        
+        # Odeslání kompletně upraveného DataFrame zpět
+        conn.update(worksheet="List1", data=edited_df)
+        
+        st.cache_data.clear()
+        st.success("Tabulka byla úspěšně aktualizována! 🚀")
+        st.rerun()
+    except Exception as e:
+        st.error(f"Chyba při ukládání: {e}")
+
+# --- HISTORIE (Původní zobrazení pro kontrolu) ---
+if st.checkbox("Zobrazit rychlý přehled historie"):
+    st.write(df.sort_values(by="datum", ascending=False))
