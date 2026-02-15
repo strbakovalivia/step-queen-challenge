@@ -54,33 +54,32 @@ if not df.empty:
     if not df_current.empty:
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
         
-        # Výpočet dnů pro průměr (pokud je to aktuální měsíc, dělíme dnešním dnem, jinak počtem dní v měsíci)
+        # Výpočet dnů pro průměr
         if vybrany_mesic == current_month_str:
             div_days = datetime.now().day
         else:
-            # Jednoduchý odhad pro uzavřené měsíce
             div_days = 30 
         
-        # Karty uživatelek (tady zůstávají tvé barvy a ikona s melírem)
         cols = st.columns(3)
         holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, # Modrá
-            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # Žlutá
-            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # Červená
+            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, 
+            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   
+            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
             osoba_total = stats[stats['jmeno'] == jmeno]
             pocet_total = int(osoba_total['kroky'].iloc[0]) if not osoba_total.empty else 0
             
-            # Kroky DNES (ukazujeme jen pro aktuální měsíc)
+            # Kroky DNES / Formátování čísla pro zobrazení
             if vybrany_mesic == current_month_str:
                 dnes_data = df[df['datum'] == today_date]
                 osoba_dnes = dnes_data[dnes_data['jmeno'] == jmeno]
-                pocet_dnes = int(osoba_dnes['kroky'].sum()) if not osoba_dnes.empty else 0
+                pocet_dnes_val = int(osoba_dnes['kroky'].sum()) if not osoba_dnes.empty else 0
+                display_dnes = f"{pocet_dnes_val:,}"
                 dnes_label = "DNES"
             else:
-                pocet_dnes = "-"
+                display_dnes = "-"
                 dnes_label = "VÝSLEDNÉ"
 
             prumer_den = int(pocet_total / div_days)
@@ -93,7 +92,7 @@ if not df.empty:
                         <p style="margin:0; font-weight: bold; color: {info['color']}; font-size: 14px;">{jmeno}</p>
                         <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
                         <p style="margin:0; font-size: 10px; opacity: 0.8;">{dnes_label}</p>
-                        <h3 style="margin:0; font-size: 22px;">{pocet_dnes:, if isinstance(pocet_dnes, int) else pocet_dnes}</h3>
+                        <h3 style="margin:0; font-size: 22px;">{display_dnes}</h3>
                         <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
                         <p style="margin:0; font-size: 11px;">ø den: <b>{prumer_den:,}</b></p>
                         <p style="margin:0; font-size: 11px;">celkem: <b>{pocet_total:,}</b></p>
