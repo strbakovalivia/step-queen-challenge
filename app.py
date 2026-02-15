@@ -95,21 +95,36 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
-# --- POKROČILÁ SPRÁVA DAT (Editace a Mazání) ---
+# --- HEZČÍ SPRÁVA ZÁZNAMŮ ---
 st.divider()
-st.subheader("🛠️ Správa záznamů")
-st.info("Zde můžeš měnit hodnoty přímo v tabulce nebo vybrat řádek a stisknout klávesu Delete. Po úpravách nezapomeň kliknout na tlačítko uložit.")
+st.subheader("🗑️ Upravit nebo smazat záznamy")
 
-# Vytvoření editoru dat
-# sloupce 'datum' a 'jmeno' necháme upravitelné, 'kroky' také
-edited_df = st.data_editor(
-    df, 
-    num_rows="dynamic", # Umožňuje mazat řádky (ikonka koše nebo klávesa delete)
-    use_container_width=True,
-    column_config={
-        "datum": st.column_config.DateColumn("Datum"),
-        "jmeno": st.column_config.SelectboxColumn("Jméno", options=["Lili", "Lenka", "Monka"]),
-        "kroky": st.column_config.NumberColumn("Počet kroků", min_value=0)
+# Seřadíme data od nejnovějších
+df_display = df.copy().sort_values(by="datum", ascending=False)
+
+for index, row in df_display.iterrows():
+    # Definice barev pro holky
+    color = "#FF4B4B" if row['jmeno'] == "Lili" else "#4B8BFF" if row['jmeno'] == "Lenka" else "#FFD700"
+    
+    # Vytvoření "karty" pro každý záznam
+    with st.container():
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+        
+        with col1:
+            st.markdown(f"**📅 {row['datum']}**")
+        with col2:
+            st.markdown(f"<span style='color:{color}; font-weight:bold;'>👤 {row['jmeno']}</span>", unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"**👣 {int(row['kroky']):,}**")
+        with col4:
+            # Unikátní klíč pro každé tlačítko smazání
+            if st.button("Smazat", key=f"del_{index}"):
+                new_df = df.drop(index)
+                conn.update(worksheet="List1", data=new_df)
+                st.cache_data.clear()
+                st.success("Smazáno!")
+                st.rerun()
+        st.markdown("---") # Oddělovač mezi kartami
     }
 )
 
