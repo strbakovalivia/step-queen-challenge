@@ -94,15 +94,26 @@ if not df.empty:
     df_display = df.copy().sort_values(by="datum", ascending=False)
 
     for index, row in df_display.iterrows():
-        # Lili = Červená, Lenka = Modrá, Monka = Zlatá
-        color = "#FF4B4B" if row['jmeno'] == "Lili" else "#4B8BFF" if row['jmeno'] == "Lenka" else "#FFD700"
+        # Nastavení ikon a barev podle jména
+        if row['jmeno'] == "Lili":
+            color = "#FF4B4B"  # Červená/Růžová
+            icon = "👱‍♀️✨"      # Melír (blonďatá s jiskrou)
+        elif row['jmeno'] == "Lenka":
+            color = "#4B8BFF"  # Modrá
+            icon = "👩🏻"        # Tmavovláska
+        elif row['jmeno'] == "Monka":
+            color = "#FFD700"  # Zlatá
+            icon = "👱‍♀️"        # Blondýnka
+        else:
+            color = "#808080"
+            icon = "🏃‍♀️"
         
         with st.container():
             c1, c2, c3 = st.columns([3, 2, 1])
             with c1:
                 st.markdown(f"**📅 {row['datum']}**")
-                # TADY JE TA ZMĚNA: Použita ikona běžkyně 🏃‍♀️
-                st.markdown(f"<span style='color:{color}; font-weight:bold;'>🏃‍♀️ {row['jmeno']}</span>", unsafe_allow_html=True)
+                # Zobrazení unikátní ikony a jména v barvě
+                st.markdown(f"<span style='color:{color}; font-weight:bold;'>{icon} {row['jmeno']}</span>", unsafe_allow_html=True)
             with c2:
                 st.markdown(f"**👣 {int(row['kroky']):,}**")
             with c3:
