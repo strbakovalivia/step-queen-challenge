@@ -47,9 +47,9 @@ if not df.empty:
         # Karty uživatelek s NOVÝMI BARVAMI
         cols = st.columns(3)
         holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"},  # MODRÁ
-            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # ŽLUTÁ
-            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # ČERVENÁ
+            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, # Stejná pleť + MODRÁ
+            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # Tmavé vlasy + ŽLUTÁ
+            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # Blond + ČERVENÁ
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
