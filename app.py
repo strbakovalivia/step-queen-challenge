@@ -7,7 +7,7 @@ from datetime import datetime
 st.set_page_config(
     page_title="StepQueen 🏃‍♀️", 
     page_icon="👑",
-    layout="centered", # Na mobilu je lepší 'centered' než 'wide'
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
@@ -33,9 +33,11 @@ df = load_data()
 current_month = datetime.now().strftime("%m/%Y")
 
 if not df.empty:
-    # Převod na datetime, aby fungovaly filtry
-    df['datum'] = pd.to_datetime(df['datum'])
-    df_current = df[df['datum'].dt.strftime("%m/%Y") == current_month]
+    # Převod na datetime, aby fungovaly filtry a správné řazení
+    df['datum'] = pd.to_datetime(df['datum']).dt.date
+    
+    # Filtrujeme aktuální měsíc
+    df_current = df[pd.to_datetime(df['datum']).dt.strftime("%m/%Y") == current_month]
     
     if not df_current.empty:
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
@@ -50,10 +52,9 @@ else:
 # --- VEČERNÍ PŘIPOMÍNAČ V APLIKACI ---
 now = datetime.now()
 if now.hour >= 21:
-    # Zkontrolujeme, kdo dnes ještě nezapsal
-    today_str = now.strftime("%Y-%m-%d")
-    zapsali_dnes = df[df['datum'].astype(str) == today_str]['jmeno'].unique()
-    
+    today_date = now.date()
+    # Zkontrolujeme, kdo dnes zapsal
+    zapsali_dnes = df[df['datum'] == today_date]['jmeno'].unique()
     chybejici = [j for j in ["Lili", "Lenka", "Monka"] if j not in zapsali_dnes]
     
     if chybejici:
@@ -73,77 +74,48 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
         submitted = st.form_submit_button("Uložit do Google Tabulky ✨")
         
         if submitted:
-            # 1. Vytvoření nového řádku
             new_entry = pd.DataFrame({
                 "datum": [datum_volba.strftime("%Y-%m-%d")],
                 "jmeno": [jmeno_volba],
                 "kroky": [int(kroky_cislo)]
             })
-            
-            # 2. Načtení čerstvých dat
             fresh_df = load_data()
-            
-            # 3. Spojení starých dat s novými
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
-            
-            # 4. Odeslání do Google Sheets (TADY MÁ BÝT UPDATE)
             conn.update(worksheet="List1", data=final_df)
-            
-            # 5. Refresh
             st.cache_data.clear()
             st.balloons()
-            st.success("Kroky úspěšně propsány do Google Tabulky! 🚀")
             st.rerun()
 
---- HEZČÍ SPRÁVA ZÁZNAMŮ (OPRAVENÁ VERZE) ---
+# --- HEZČÍ SPRÁVA ZÁZNAMŮ (Smazání) ---
 st.divider()
-st.subheader("🗑️ Upravit nebo smazat záznamy")
+st.subheader("🗑️ Historie a mazání")
 
-# Vytvoříme kopii pro zobrazení, ale indexy zachováme původní
-df_display = df.copy().sort_values(by="datum", ascending=False)
+if not df.empty:
+    # Seřadíme od nejnovějších
+    df_display = df.copy().sort_values(by="datum", ascending=False)
 
-for index, row in df_display.iterrows():
-    # Definice barev pro holky
-    color = "#FF4B4B" if row['jmeno'] == "Lili" else "#4B8BFF" if row['jmeno'] == "Lenka" else "#FFD700"
-    
-    # Vytvoření "karty" pro každý záznam
-    with st.container():
-        # Upravil jsem poměry sloupců, aby se to na mobilu lépe skládalo
-        col1, col2, col3 = st.columns([3, 2, 1])
+    for index, row in df_display.iterrows():
+        color = "#FF4B4B" if row['jmeno'] == "Lili" else "#4B8BFF" if row['jmeno'] == "Lenka" else "#FFD700"
         
-        with col1:
-            # Datum a jméno v jednom sloupci nad sebou pro úsporu místa
-            st.markdown(f"**📅 {row['datum']}**")
-            st.markdown(f"<span style='color:{color}; font-weight:bold;'>👤 {row['jmeno']}</span>", unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"**👣 {int(row['kroky']):,}**")
-        
-        with col3:
-            # Tlačítko smazat
-            if st.button("🗑️", key=f"del_{index}"):
-                # Smažeme řádek podle původního indexu
-                updated_df = df.drop(index)
-                conn.update(worksheet="List1", data=updated_df)
-                st.cache_data.clear()
-                st.rerun()
-        
-        st.markdown("---")
-if st.button("💾 Uložit všechny změny do tabulky"):
-    try:
-        # Převod datumu zpět na řetězec, aby se v Google Sheets správně zobrazoval
-        if "datum" in edited_df.columns:
-            edited_df["datum"] = edited_df["datum"].astype(str)
-        
-        # Odeslání kompletně upraveného DataFrame zpět
-        conn.update(worksheet="List1", data=edited_df)
-        
-        st.cache_data.clear()
-        st.success("Tabulka byla úspěšně aktualizována! 🚀")
-        st.rerun()
-    except Exception as e:
-        st.error(f"Chyba při ukládání: {e}")
+        with st.container():
+            c1, c2, c3 = st.columns([3, 2, 1])
+            with c1:
+                st.markdown(f"**📅 {row['datum']}**")
+                st.markdown(f"<span style='color:{color}; font-weight:bold;'>👤 {row['jmeno']}</span>", unsafe_allow_html=True)
+            with c2:
+                st.markdown(f"**👣 {int(row['kroky']):,}**")
+            with c3:
+                # Smažeme přímo pomocí tlačítka u řádku
+                if st.button("🗑️", key=f"del_{index}"):
+                    # Musíme smazat z původního df (pomocí indexu)
+                    df_to_save = df.drop(index)
+                    conn.update(worksheet="List1", data=df_to_save)
+                    st.cache_data.clear()
+                    st.rerun()
+            st.markdown("---")
+else:
+    st.write("Žádná data k zobrazení.")
 
-# --- HISTORIE (Původní zobrazení pro kontrolu) ---
-if st.checkbox("Zobrazit rychlý přehled historie"):
-    st.write(df.sort_values(by="datum", ascending=False))
+# --- RYCHLÝ PŘEHLED ---
+if st.checkbox("Zobrazit tabulku pro kontrolu"):
+    st.dataframe(df)
