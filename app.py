@@ -12,96 +12,124 @@ st.set_page_config(
 )
 
 st.title("🏃‍♀️ StepQueen Challenge")
-st.write("Souboj mezi **Lili**, **Lenkou** a **Monkou**!")
+st.write("Souboj mezi **Lili**, **Lenka** a **Monka**!")
 
 # --- PROPOJENÍ S GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Funkce pro bezpečné načtení dat
 def load_data():
     try:
         data = conn.read(worksheet="List1", ttl="0s")
         if data is None or data.empty:
             return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
+        # Převod na datum pro jistotu
+        data['datum'] = pd.to_datetime(data['datum']).dt.date
         return data
     except Exception:
         return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
 
 df = load_data()
 
-# --- VÝPOČET KRÁLOVNY ---
 # --- VÝPOČET KRÁLOVNY A DASHBOARD ---
-if not df_current.empty:
-    stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
-    
-    # Výpočet průměru (počet dní v měsíci do dneška)
-    den_v_mesici = datetime.now().day
-    
-    cols = st.columns(3)
-    holky_nastaveni = {
-        "Lili": {"icon": "👱‍♀️✨", "color": "#FF4B4B"},
-        "Lenka": {"icon": "👩🏻", "color": "#4B8BFF"},
-        "Monka": {"icon": "👱‍♀️", "color": "#FFD700"}
-    }
+current_month_str = datetime.now().strftime("%m/%Y")
+st.subheader(f"📊 Přehled za {current_month_str}")
 
-    for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
-        osoba_data = stats[stats['jmeno'] == jmeno]
-        pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
-        prumer_den = int(pocet_kroku / den_v_mesici) # Denní průměr v měsíci
+if not df.empty:
+    # Filtrace pro aktuální měsíc
+    df_temp = df.copy()
+    df_temp['month_year'] = pd.to_datetime(df_temp['datum']).dt.strftime("%m/%Y")
+    df_current = df_temp[df_temp['month_year'] == current_month_str]
+    
+    if not df_current.empty:
+        stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
+        den_v_mesici = datetime.now().day
         
-        with cols[i]:
-            st.markdown(
-                f"""
-                <div style="background-color: {info['color']}22; padding: 15px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center;">
-                    <h1 style="margin:0;">{info['icon']}</h1>
-                    <p style="margin:0; font-weight: bold; color: {info['color']};">{jmeno}</p>
-                    <h2 style="margin:0;">{pocet_kroku:,}</h2>
-                    <p style="margin:0; font-size: 12px;">celkem</p>
-                    <hr style="border: 0.5px solid {info['color']}55;">
-                    <p style="margin:0; font-size: 14px; font-weight: bold;">{prumer_den:,}</p>
-                    <p style="margin:0; font-size: 10px; opacity: 0.8;">denní průměr</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        cols = st.columns(3)
+        holky_nastaveni = {
+            "Lili": {"icon": "👱‍♀️✨", "color": "#FF4B4B"},
+            "Lenka": {"icon": "👩🏻", "color": "#4B8BFF"},
+            "Monka": {"icon": "👱‍♀️", "color": "#FFD700"}
+        }
 
-        # Určení celkové vítězky pro motivační zprávu
+        for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
+            osoba_data = stats[stats['jmeno'] == jmeno]
+            pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
+            prumer_den = int(pocet_kroku / den_v_mesici)
+            
+            with cols[i]:
+                st.markdown(
+                    f"""
+                    <div style="background-color: {info['color']}22; padding: 15px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center; min-height: 180px;">
+                        <h1 style="margin:0;">{info['icon']}</h1>
+                        <p style="margin:0; font-weight: bold; color: {info['color']};">{jmeno}</p>
+                        <h2 style="margin:0;">{pocet_kroku:,}</h2>
+                        <p style="margin:0; font-size: 12px;">celkem</p>
+                        <hr style="border: 0.5px solid {info['color']}55; margin: 10px 0;">
+                        <p style="margin:0; font-size: 14px; font-weight: bold;">{prumer_den:,}</p>
+                        <p style="margin:0; font-size: 10px; opacity: 0.8;">denní průměr</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
         winner_row = stats.loc[stats['kroky'].idxmax()]
-        st.balloons() if winner_row['kroky'] > 0 else None
-        st.markdown(f"👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!")
-        
-        # Stylový graf pod kartami
+        st.markdown(f"<br>👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!", unsafe_allow_html=True)
         st.bar_chart(data=stats, x="jmeno", y="kroky", color="#FF4B4B")
     else:
-        st.info("Tento měsíc zatím žádné kroky. Kdo začne?")
+        st.info("Tento měsíc zatím žádné kroky.")
 else:
-    st.info("Zatím žádná data. Šup ven na procházku!")
-    
-# --- VEČERNÍ PŘIPOMÍNAČ V APLIKACI ---
-now = datetime.now()
-if now.hour >= 21:
-    today_date = now.date()
-    # Zkontrolujeme, kdo dnes zapsal
-    zapsali_dnes = df[df['datum'] == today_date]['jmeno'].unique()
-    chybejici = [j for j in ["Lili", "Lenka", "Monka"] if j not in zapsali_dnes]
-    
-    if chybejici:
-        st.warning(f"⚠️ Je po deváté večer a tyto královny ještě nezapsaly kroky: {', '.join(chybejici)}!")
+    st.info("Zatím žádná data.")
+
+# --- SEKCE ODMĚNA PRO KRÁLOVNU ---
+st.divider()
+st.subheader("🎁 Odměna pro vítězku měsíce")
+
+try:
+    df_darky = conn.read(worksheet="Darky", ttl="0s")
+except:
+    df_darky = pd.DataFrame(columns=["navrh", "autor", "lajky"])
+
+with st.expander("💡 Navrhnout nebo hlasovat pro dárek"):
+    with st.form("new_gift"):
+        novy_tip = st.text_input("Tvůj tip na dárek:")
+        kdo_navrhl = st.selectbox("Navrhuje:", ["Lili", "Lenka", "Monka"])
+        if st.form_submit_button("Přidat návrh"):
+            if novy_tip:
+                new_gift_row = pd.DataFrame({"navrh": [novy_tip], "autor": [kdo_navrhl], "lajky": [0]})
+                updated_darky = pd.concat([df_darky, new_gift_row], ignore_index=True)
+                conn.update(worksheet="Darky", data=updated_darky)
+                st.cache_data.clear()
+                st.rerun()
+
+    if not df_darky.empty:
+        for idx, row in df_darky.iterrows():
+            c1, c2, c3 = st.columns([3, 1, 1])
+            with c1:
+                st.write(f"**{row['navrh']}**")
+                st.caption(f"od {row['autor']}")
+            with c2:
+                st.write(f"❤️ {int(row['lajky'])}")
+            with c3:
+                if st.button("Lajk", key=f"like_{idx}"):
+                    df_darky.at[idx, 'lajky'] += 1
+                    conn.update(worksheet="Darky", data=df_darky)
+                    st.cache_data.clear()
+                    st.rerun()
+    else:
+        st.write("Zatím žádné návrhy.")
 
 # --- FORMULÁŘ PRO ZÁPIS ---
 st.divider()
-with st.expander("➕ Zapsat dnešní kroky", expanded=True):
+with st.expander("➕ Zapsat dnešní kroky", expanded=False):
     with st.form("add_steps"):
         col1, col2 = st.columns(2)
         with col1:
-            jmeno_volba = st.selectbox("Kdo jsi?", ["Lili", "Lenka", "Monka"])
+            jmeno_volba = st.selectbox("Kdo jsi?", ["Lili", "Lenka", "Monka"], key="user_select")
         with col2:
             datum_volba = st.date_input("Den", datetime.now())
         
         kroky_cislo = st.number_input("Počet kroků", min_value=0, step=100, value=10000)
-        submitted = st.form_submit_button("Uložit do Google Tabulky ✨")
-        
-        if submitted:
+        if st.form_submit_button("Uložit do Google Tabulky ✨"):
             new_entry = pd.DataFrame({
                 "datum": [datum_volba.strftime("%Y-%m-%d")],
                 "jmeno": [jmeno_volba],
@@ -114,33 +142,21 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=True):
             st.balloons()
             st.rerun()
 
-# --- HEZČÍ SPRÁVA ZÁZNAMŮ (Smazání) ---
+# --- SPRÁVA ZÁZNAMŮ ---
 st.divider()
 st.subheader("🗑️ Historie a mazání")
-
 if not df.empty:
     df_display = df.copy().sort_values(by="datum", ascending=False)
-
     for index, row in df_display.iterrows():
-        # Nastavení ikon a barev podle jména
-        if row['jmeno'] == "Lili":
-            color = "#FF4B4B"  # Červená/Růžová
-            icon = "👱‍♀️✨"      # Melír (blonďatá s jiskrou)
-        elif row['jmeno'] == "Lenka":
-            color = "#4B8BFF"  # Modrá
-            icon = "👩🏻"        # Tmavovláska
-        elif row['jmeno'] == "Monka":
-            color = "#FFD700"  # Zlatá
-            icon = "👱‍♀️"        # Blondýnka
-        else:
-            color = "#808080"
-            icon = "🏃‍♀️"
+        if row['jmeno'] == "Lili": color, icon = "#FF4B4B", "👱‍♀️✨"
+        elif row['jmeno'] == "Lenka": color, icon = "#4B8BFF", "👩🏻"
+        elif row['jmeno'] == "Monka": color, icon = "#FFD700", "👱‍♀️"
+        else: color, icon = "#808080", "🏃‍♀️"
         
         with st.container():
             c1, c2, c3 = st.columns([3, 2, 1])
             with c1:
                 st.markdown(f"**📅 {row['datum']}**")
-                # Zobrazení unikátní ikony a jména v barvě
                 st.markdown(f"<span style='color:{color}; font-weight:bold;'>{icon} {row['jmeno']}</span>", unsafe_allow_html=True)
             with c2:
                 st.markdown(f"**👣 {int(row['kroky']):,}**")
@@ -151,9 +167,3 @@ if not df.empty:
                     st.cache_data.clear()
                     st.rerun()
             st.markdown("---")
-else:
-    st.write("Žádná data k zobrazení.")
-
-# --- RYCHLÝ PŘEHLED ---
-if st.checkbox("Zobrazit tabulku pro kontrolu"):
-    st.dataframe(df)
