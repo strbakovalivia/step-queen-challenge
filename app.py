@@ -23,7 +23,6 @@ def load_data():
         data = conn.read(worksheet="List1", ttl="0s")
         if data is None or data.empty:
             return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
-        # Převod sloupce datum na skutečný typ datum, aby s ním šlo pracovat
         data['datum'] = pd.to_datetime(data['datum']).dt.date
         return data
     except Exception:
@@ -31,8 +30,9 @@ def load_data():
 
 df = load_data()
 
-# --- VÝPOČET KRÁLOVNY A DASHBOARD (VYČIŠTĚNO) ---
+# --- VÝPOČET KRÁLOVNY A DASHBOARD ---
 current_month_str = datetime.now().strftime("%m/%Y")
+today_date = datetime.now().date()
 st.subheader(f"📊 Přehled za {current_month_str}")
 
 if not df.empty:
@@ -44,41 +44,49 @@ if not df.empty:
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
         den_v_mesici = datetime.now().day
         
-        # Karty uživatelek
+        # Karty uživatelek s NOVÝMI BARVAMI
         cols = st.columns(3)
         holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#FF4B4B"},
-            "Lenka": {"icon": "👩🏻", "color": "#4B8BFF"},
-            "Monka": {"icon": "👱‍♀️", "color": "#FFD700"}
+            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"},  # MODRÁ
+            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # ŽLUTÁ
+            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # ČERVENÁ
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
-            osoba_data = stats[stats['jmeno'] == jmeno]
-            pocet_kroku = int(osoba_data['kroky'].iloc[0]) if not osoba_data.empty else 0
-            prumer_den = int(pocet_kroku / den_v_mesici)
+            # Kroky celkem (za měsíc)
+            osoba_total = stats[stats['jmeno'] == jmeno]
+            pocet_total = int(osoba_total['kroky'].iloc[0]) if not osoba_total.empty else 0
+            
+            # Kroky DNES
+            dnes_data = df[df['datum'] == today_date]
+            osoba_dnes = dnes_data[dnes_data['jmeno'] == jmeno]
+            pocet_dnes = int(osoba_dnes['kroky'].sum()) if not osoba_dnes.empty else 0
+            
+            # Průměr
+            prumer_den = int(pocet_total / den_v_mesici)
             
             with cols[i]:
                 st.markdown(
                     f"""
-                    <div style="background-color: {info['color']}22; padding: 10px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center; min-height: 150px;">
+                    <div style="background-color: {info['color']}22; padding: 12px; border-radius: 15px; border: 2px solid {info['color']}; text-align: center; min-height: 200px;">
                         <h2 style="margin:0; font-size: 30px;">{info['icon']}</h2>
                         <p style="margin:0; font-weight: bold; color: {info['color']}; font-size: 14px;">{jmeno}</p>
-                        <h3 style="margin:0; font-size: 18px;">{pocet_kroku:,}</h3>
-                        <p style="margin:0; font-size: 10px; opacity: 0.8;">celkem</p>
                         <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
-                        <p style="margin:0; font-size: 14px; font-weight: bold;">{prumer_den:,}</p>
-                        <p style="margin:0; font-size: 9px; opacity: 0.8;">ø den</p>
+                        <p style="margin:0; font-size: 10px; opacity: 0.8;">DNES</p>
+                        <h3 style="margin:0; font-size: 22px;">{pocet_dnes:,}</h3>
+                        <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
+                        <p style="margin:0; font-size: 11px;">ø den: <b>{prumer_den:,}</b></p>
+                        <p style="margin:0; font-size: 11px;">celkem: <b>{pocet_total:,}</b></p>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-        # Graf (bez zbytečných textů okolo)
+        # Motivační hláška pod kartami
         winner_row = stats.loc[stats['kroky'].idxmax()]
-        st.write("") 
-        
-        
+        st.write("")
         st.success(f"👑 Aktuálně vede **{winner_row['jmeno']}**!")
+        
     else:
         st.info("Tento měsíc zatím žádné kroky.")
 else:
@@ -146,9 +154,10 @@ st.subheader("🗑️ Historie a mazání")
 if not df.empty:
     df_display = df.copy().sort_values(by="datum", ascending=False)
     for index, row in df_display.iterrows():
-        if row['jmeno'] == "Lili": color, icon = "#FF4B4B", "👱‍♀️✨"
-        elif row['jmeno'] == "Lenka": color, icon = "#4B8BFF", "👩🏻"
-        elif row['jmeno'] == "Monka": color, icon = "#FFD700", "👱‍♀️"
+        # Přiřazení barev pro historii (Lili modrá, Lenka žlutá, Monka červená)
+        if row['jmeno'] == "Lili": color, icon = "#4B8BFF", "👱‍♀️✨"
+        elif row['jmeno'] == "Lenka": color, icon = "#FFD700", "👩🏻"
+        elif row['jmeno'] == "Monka": color, icon = "#FF4B4B", "👱‍♀️"
         else: color, icon = "#808080", "🏃‍♀️"
         
         with st.container():
