@@ -23,7 +23,7 @@ def load_data():
         data = conn.read(worksheet="List1", ttl="0s")
         if data is None or data.empty:
             return pd.DataFrame(columns=["datum", "jmeno", "kroky"])
-        # Převod na datum pro jistotu
+        # Převod sloupce datum na skutečný typ datum, aby s ním šlo pracovat
         data['datum'] = pd.to_datetime(data['datum']).dt.date
         return data
     except Exception:
@@ -36,12 +36,13 @@ current_month_str = datetime.now().strftime("%m/%Y")
 st.subheader(f"📊 Přehled za {current_month_str}")
 
 if not df.empty:
-    # Filtrace pro aktuální měsíc
+    # 1. Musíme vytvořit pomocný sloupec pro filtraci měsíce
     df_temp = df.copy()
     df_temp['month_year'] = pd.to_datetime(df_temp['datum']).dt.strftime("%m/%Y")
     df_current = df_temp[df_temp['month_year'] == current_month_str]
     
     if not df_current.empty:
+        # 2. Seskupení dat pro dashboard
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
         den_v_mesici = datetime.now().day
         
@@ -73,38 +74,15 @@ if not df.empty:
                     unsafe_allow_html=True
                 )
 
+        # 3. Určení vítězky a barevný graf
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.markdown(f"<br>👑 Aktuálně vede **{winner_row['jmeno']}**! Holky, makejte!", unsafe_allow_html=True)
-        st.write("") # Trocha místa
         
-        # Definice barev pro graf přesně podle vás
-        color_map = {
-            "Lili": "#FF4B4B",
-            "Lenka": "#4B8BFF",
-            "Monka": "#FFD700"
-        }
-        
-        fig = px.bar(
-            stats, 
-            x="jmeno", 
-            y="kroky", 
-            color="jmeno",
-            color_discrete_map=color_map,
-            text_auto=',.0f', # Zobrazí číslo nad sloupcem s oddělovačem tisíců
-            labels={"kroky": "Celkem kroků", "jmeno": "Královna"}
-        )
-        
-        # Vylepšení vzhledu grafu (odstranění zbytečných čar, pozadí atd.)
-        fig.update_traces(textposition='outside', cliponaxis=False)
-        fig.update_layout(
-            showlegend=False,
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=20, l=0, r=0, b=0),
-            xaxis={'categoryorder':'total descending'}, # Seřadí sloupce od nejlepšího
-            yaxis_showticklabels=False, # Schováme levou osu, čísla jsou nad sloupci
-            yaxis_visible=False
-        )
+        color_map = {"Lili": "#FF4B4B", "Lenka": "#4B8BFF", "Monka": "#FFD700"}
+        fig = px.bar(stats, x="jmeno", y="kroky", color="jmeno", color_discrete_map=color_map, text_auto=',.0f')
+        fig.update_traces(textposition='outside')
+        fig.update_layout(showlegend=False, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', 
+                          xaxis={'categoryorder':'total descending'}, yaxis_visible=False, height=300)
         
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     else:
@@ -147,8 +125,6 @@ with st.expander("💡 Navrhnout nebo hlasovat pro dárek"):
                     conn.update(worksheet="Darky", data=df_darky)
                     st.cache_data.clear()
                     st.rerun()
-    else:
-        st.write("Zatím žádné návrhy.")
 
 # --- FORMULÁŘ PRO ZÁPIS ---
 st.divider()
@@ -161,12 +137,8 @@ with st.expander("➕ Zapsat dnešní kroky", expanded=False):
             datum_volba = st.date_input("Den", datetime.now())
         
         kroky_cislo = st.number_input("Počet kroků", min_value=0, step=100, value=10000)
-        if st.form_submit_button("Uložit do Google Tabulky ✨"):
-            new_entry = pd.DataFrame({
-                "datum": [datum_volba.strftime("%Y-%m-%d")],
-                "jmeno": [jmeno_volba],
-                "kroky": [int(kroky_cislo)]
-            })
+        if st.form_submit_button("Uložit ✨"):
+            new_entry = pd.DataFrame({"datum": [datum_volba.strftime("%Y-%m-%d")], "jmeno": [jmeno_volba], "kroky": [int(kroky_cislo)]})
             fresh_df = load_data()
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
             conn.update(worksheet="List1", data=final_df)
@@ -190,8 +162,7 @@ if not df.empty:
             with c1:
                 st.markdown(f"**📅 {row['datum']}**")
                 st.markdown(f"<span style='color:{color}; font-weight:bold;'>{icon} {row['jmeno']}</span>", unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"**👣 {int(row['kroky']):,}**")
+            with c2: st.markdown(f"**👣 {int(row['kroky']):,}**")
             with c3:
                 if st.button("🗑️", key=f"del_{index}"):
                     df_to_save = df.drop(index)
