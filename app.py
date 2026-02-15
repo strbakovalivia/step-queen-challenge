@@ -141,9 +141,9 @@ with st.expander("💡 Navrhnout nebo hlasovat pro dárek"):
                     st.cache_data.clear()
                     st.rerun()
 
-# --- FORMULÁŘ PRO ZÁPIS (S AUTOMATICKOU AKTUALIZACÍ) ---
+# --- FORMULÁŘ PRO ZÁPIS S KONTROLOU EXISTUJÍCÍCH DAT ---
 st.divider()
-with st.expander("➕ Zapsat/Upravit dnešní kroky", expanded=False):
+with st.expander("➕ Zapsat / Opravit kroky", expanded=False):
     with st.form("add_steps"):
         col1, col2 = st.columns(2)
         with col1:
@@ -151,20 +151,22 @@ with st.expander("➕ Zapsat/Upravit dnešní kroky", expanded=False):
         with col2:
             datum_volba = st.date_input("Den", datetime.now())
         
-        kroky_cislo = st.number_input("Konečný počet kroků pro tento den", min_value=0, step=100, value=10000)
+        # Kontrola, zda již existuje záznam
+        existujici_zaznam = df[(df['jmeno'] == jmeno_volba) & (df['datum'] == datum_volba)]
         
-        if st.form_submit_button("Uložit ✨"):
+        if not existujici_zaznam.empty:
+            puvodni_kroky = int(existujici_zaznam['kroky'].iloc[0])
+            st.info(f"💡 Pro tento den už máš zapsáno **{puvodni_kroky:,}** kroků. Novým uložením hodnotu opravíš.")
+        
+        kroky_cislo = st.number_input("Zadej správný počet kroků", min_value=0, step=100, value=10000)
+        
+        if st.form_submit_button("Uložit změnu ✨"):
             fresh_df = load_data()
             
-            # PŘEPISOVACÍ LOGIKA:
-            # Podíváme se, jestli už existuje záznam pro stejné jméno a stejný datum
-            duplicitni_index = fresh_df[(fresh_df['jmeno'] == jmeno_volba) & (fresh_df['datum'] == datum_volba)].index
+            # Odstraníme případný starý záznam pro tento den a osobu
+            fresh_df = fresh_df[~((fresh_df['jmeno'] == jmeno_volba) & (fresh_df['datum'] == datum_volba))]
             
-            if not duplicitni_index.empty:
-                # Pokud existuje, starý záznam odstraníme
-                fresh_df = fresh_df.drop(duplicitni_index)
-            
-            # Přidáme nový záznam
+            # Přidáme nový/opravený záznam
             new_entry = pd.DataFrame({
                 "datum": [datum_volba], 
                 "jmeno": [jmeno_volba], 
@@ -172,8 +174,6 @@ with st.expander("➕ Zapsat/Upravit dnešní kroky", expanded=False):
             })
             
             final_df = pd.concat([fresh_df, new_entry], ignore_index=True)
-            
-            # Seřadíme podle data, aby v tabulce nebyl nepořádek
             final_df = final_df.sort_values(by="datum", ascending=False)
             
             conn.update(worksheet="List1", data=final_df)
