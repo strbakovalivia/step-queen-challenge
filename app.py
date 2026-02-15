@@ -4,7 +4,12 @@ import pandas as pd
 from datetime import datetime
 
 # --- NASTAVENÍ STRÁNKY ---
-st.set_page_config(page_title="StepQueen 🏃‍♀️", page_icon="👑")
+st.set_page_config(
+    page_title="StepQueen 🏃‍♀️", 
+    page_icon="👑",
+    layout="centered", # Na mobilu je lepší 'centered' než 'wide'
+    initial_sidebar_state="collapsed"
+)
 
 st.title("🏃‍♀️ StepQueen Challenge")
 st.write("Souboj mezi **Lili**, **Lenkou** a **Monkou**!")
