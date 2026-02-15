@@ -31,39 +31,59 @@ def load_data():
 df = load_data()
 
 # --- VÝPOČET KRÁLOVNY A DASHBOARD ---
+# 1. Příprava dat pro výběr měsíce
+df_temp = df.copy()
+df_temp['month_year'] = pd.to_datetime(df_temp['datum']).dt.strftime("%m/%Y")
+
 current_month_str = datetime.now().strftime("%m/%Y")
 today_date = datetime.now().date()
-st.subheader(f"📊 Přehled za {current_month_str}")
+
+# 2. Vytvoření seznamu dostupných měsíců z dat + aktuální měsíc
+seznam_mesicu = sorted(df_temp['month_year'].unique().tolist(), reverse=True) if not df.empty else []
+if current_month_str not in seznam_mesicu:
+    seznam_mesicu.insert(0, current_month_str)
+
+# 3. Samotný výběr měsíce v aplikaci
+vybrany_mesic = st.selectbox("📅 Zobrazit statistiky za období:", seznam_mesicu)
+st.subheader(f"📊 Přehled za {vybrany_mesic}")
 
 if not df.empty:
-    df_temp = df.copy()
-    df_temp['month_year'] = pd.to_datetime(df_temp['datum']).dt.strftime("%m/%Y")
-    df_current = df_temp[df_temp['month_year'] == current_month_str]
+    # Filtrace dat podle vybraného měsíce
+    df_current = df_temp[df_temp['month_year'] == vybrany_mesic]
     
     if not df_current.empty:
         stats = df_current.groupby("jmeno")["kroky"].sum().reset_index()
-        den_v_mesici = datetime.now().day
         
-        # Karty uživatelek s NOVÝMI BARVAMI
+        # Výpočet dnů pro průměr (pokud je to aktuální měsíc, dělíme dnešním dnem, jinak počtem dní v měsíci)
+        if vybrany_mesic == current_month_str:
+            div_days = datetime.now().day
+        else:
+            # Jednoduchý odhad pro uzavřené měsíce
+            div_days = 30 
+        
+        # Karty uživatelek (tady zůstávají tvé barvy a ikona s melírem)
         cols = st.columns(3)
         holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, # Stejná pleť + MODRÁ
-            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # Tmavé vlasy + ŽLUTÁ
-            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # Blond + ČERVENÁ
+            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, # Modrá
+            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   # Žlutá
+            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    # Červená
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
-            # Kroky celkem (za měsíc)
             osoba_total = stats[stats['jmeno'] == jmeno]
             pocet_total = int(osoba_total['kroky'].iloc[0]) if not osoba_total.empty else 0
             
-            # Kroky DNES
-            dnes_data = df[df['datum'] == today_date]
-            osoba_dnes = dnes_data[dnes_data['jmeno'] == jmeno]
-            pocet_dnes = int(osoba_dnes['kroky'].sum()) if not osoba_dnes.empty else 0
-            
-            # Průměr
-            prumer_den = int(pocet_total / den_v_mesici)
+            # Kroky DNES (ukazujeme jen pro aktuální měsíc)
+            if vybrany_mesic == current_month_str:
+                dnes_data = df[df['datum'] == today_date]
+                osoba_dnes = dnes_data[dnes_data['jmeno'] == jmeno]
+                pocet_dnes = int(osoba_dnes['kroky'].sum()) if not osoba_dnes.empty else 0
+                dnes_label = "DNES"
+            else:
+                pocet_dnes = "-"
+                dnes_label = "VÝSLEDNÉ"
+
+            prumer_den = int(pocet_total / div_days)
             
             with cols[i]:
                 st.markdown(
@@ -72,8 +92,8 @@ if not df.empty:
                         <h2 style="margin:0; font-size: 30px;">{info['icon']}</h2>
                         <p style="margin:0; font-weight: bold; color: {info['color']}; font-size: 14px;">{jmeno}</p>
                         <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
-                        <p style="margin:0; font-size: 10px; opacity: 0.8;">DNES</p>
-                        <h3 style="margin:0; font-size: 22px;">{pocet_dnes:,}</h3>
+                        <p style="margin:0; font-size: 10px; opacity: 0.8;">{dnes_label}</p>
+                        <h3 style="margin:0; font-size: 22px;">{pocet_dnes:, if isinstance(pocet_dnes, int) else pocet_dnes}</h3>
                         <hr style="border: 0.5px solid {info['color']}55; margin: 5px 0;">
                         <p style="margin:0; font-size: 11px;">ø den: <b>{prumer_den:,}</b></p>
                         <p style="margin:0; font-size: 11px;">celkem: <b>{pocet_total:,}</b></p>
@@ -82,15 +102,9 @@ if not df.empty:
                     unsafe_allow_html=True
                 )
 
-        # Motivační hláška pod kartami
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.write("")
-        st.success(f"👑 Aktuálně vede **{winner_row['jmeno']}**!")
-        
-    else:
-        st.info("Tento měsíc zatím žádné kroky.")
-else:
-    st.info("Zatím žádná data.")
+        st.success(f"👑 Královnou měsíce {vybrany_mesic} je **{winner_row['jmeno']}**!")
 
 # --- SEKCE ODMĚNA PRO KRÁLOVNU ---
 st.divider()
