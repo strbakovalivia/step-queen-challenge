@@ -77,19 +77,6 @@ if not df.empty:
         winner_row = stats.loc[stats['kroky'].idxmax()]
         st.write("") 
         
-        color_map = {"Lili": "#FF4B4B", "Lenka": "#4B8BFF", "Monka": "#FFD700"}
-        fig = px.bar(stats, x="jmeno", y="kroky", color="jmeno", color_discrete_map=color_map, text_auto=',.0f')
-        fig.update_traces(textposition='outside')
-        fig.update_layout(
-            showlegend=False, 
-            plot_bgcolor='rgba(0,0,0,0)', 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            xaxis={'categoryorder':'total descending', 'title': ''}, 
-            yaxis_visible=False, 
-            height=250, # Snížil jsem výšku, aby to na mobilu nezabralo celou obrazovku
-            margin=dict(t=20, b=0, l=0, r=0)
-        )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         
         st.success(f"👑 Aktuálně vede **{winner_row['jmeno']}**!")
     else:
