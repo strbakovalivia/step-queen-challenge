@@ -61,8 +61,8 @@ if not df.empty:
         
         cols = st.columns(3)
         holky_nastaveni = {
-            "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, 
-            "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   
+            "Lili": {"icon": "🐹", "color": "#4B8BFF"}, 
+            "Lenka": {"icon": "🐕‍🦺", "color": "#FFD700"},   
             "Monka": {"icon": "🐼", "color": "#FF4B4B"}    
         }
 
