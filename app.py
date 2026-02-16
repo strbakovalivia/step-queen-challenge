@@ -63,7 +63,7 @@ if not df.empty:
         holky_nastaveni = {
             "Lili": {"icon": "👱‍♀️✨", "color": "#4B8BFF"}, 
             "Lenka": {"icon": "👩🏻", "color": "#FFD700"},   
-            "Monka": {"icon": "👱‍♀️", "color": "#FF4B4B"}    
+            "Monka": {"icon": "🐼", "color": "#FF4B4B"}    
         }
 
         for i, (jmeno, info) in enumerate(holky_nastaveni.items()):
